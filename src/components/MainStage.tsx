@@ -38,6 +38,14 @@ export default function MainStage({
     'stage__background--birth';
 
   const showEffects = !!environment && ['environment', 'evolving', 'trial'].includes(phase);
+
+  // Map environment to world weather + atmosphere
+  const envWeather: import('../world/types').Weather =
+    environment?.envVariables?.temperature === 'extreme_low' || environment?.envVariables?.temperature === 'low' ? 'snow' :
+    environment?.envVariables?.solvent === 'saturated' || environment?.envVariables?.solvent === 'submerged' ? 'rain' :
+    environment?.envVariables?.luminosity === 'scorching' || environment?.envVariables?.luminosity === 'bright' ? 'sun' :
+    'none';
+  const envAtmosphereColor = showEffects ? environment?.visualTone?.primaryColor : undefined;
   const showEvolvingVisual = phase === 'evolving' && !evolution;
   const showEvolutionTransition = phase === 'evolving' && !!evolution;
 
@@ -77,9 +85,11 @@ export default function MainStage({
               <div className={`stage__creature-area${showEvolutionTransition ? ' stage__creature-area--morphing' : ''}`}>
                 <WorldScene
                   ref={worldRef}
-                  weather="none"
+                  weather={showEffects ? envWeather : 'none'}
                   theme="light"
                   creatureSpec={creature.creatureSpec}
+                  atmosphereColor={envAtmosphereColor}
+                  atmosphereOpacity={showEffects ? 0.2 : 0}
                 />
               </div>
               {phase === 'birth' && creature.birthWords && (

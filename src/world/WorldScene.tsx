@@ -376,6 +376,10 @@ export interface WorldSceneProps {
   creatureSpec?: CreatureSpec;
   creatureSize?: number;
   theme?: WorldTheme;
+  /** Atmosphere tint color from environment visual_tone (e.g. "#ff4400") */
+  atmosphereColor?: string;
+  /** Atmosphere opacity 0-1 */
+  atmosphereOpacity?: number;
 }
 
 export interface WorldSceneHandle {
@@ -384,7 +388,7 @@ export interface WorldSceneHandle {
 }
 
 export const WorldScene = forwardRef<WorldSceneHandle, WorldSceneProps>(function WorldScene(
-  { weather = 'none', creatureSpec, creatureSize = 220, theme = 'dark' },
+  { weather = 'none', creatureSpec, creatureSize = 220, theme = 'dark', atmosphereColor, atmosphereOpacity = 0.15 },
   ref,
 ) {
   const spec = creatureSpec ?? DEFAULT_SPEC;
@@ -438,6 +442,22 @@ export const WorldScene = forwardRef<WorldSceneHandle, WorldSceneProps>(function
 
       {/* Weather layer (stays fixed to viewport, not camera) */}
       {WeatherComp && <WeatherComp />}
+
+      {/* Atmosphere tint from environment visual_tone */}
+      {atmosphereColor && (
+        <div
+          className="world-atmosphere"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: `radial-gradient(ellipse at 50% 80%, ${atmosphereColor}, transparent 70%)`,
+            opacity: atmosphereOpacity,
+            pointerEvents: 'none',
+            zIndex: 8,
+            transition: 'opacity 2s ease, background 2s ease',
+          }}
+        />
+      )}
 
       {/* Camera-tracked world content */}
       <div

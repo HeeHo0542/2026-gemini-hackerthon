@@ -113,7 +113,7 @@ OUTPUT SCHEMA:
   "threat_detail": "1~2줄. 어떤 약점이 어떻게 위협받는지 명시.",
   "hidden_opportunity": "위협을 뒤집었을 때의 잠재적 이점 1줄.",
   "visual_tone": {
-    "primary_color": "영어",
+    "primary_color": "CSS hex color for atmosphere tint (예: #44ff88 for toxic green, #ff4400 for volcanic, #aaccff for frozen). 반드시 hex 색상 코드.",
     "mood": "영어",
     "key_visual": "한글 1개"
   },
