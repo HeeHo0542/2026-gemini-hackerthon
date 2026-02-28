@@ -174,7 +174,7 @@ export function usePhysicsWorld(isDead = false) {
       // Hard boundary — creature stays within visible area (±margin around canvas)
       {
         const cr = creatureRef.current!;
-        const MARGIN = 200;
+        const MARGIN = 60;
         const clampedX = Math.max(-MARGIN, Math.min(CANVAS.width + MARGIN, cr.position.x));
         if (cr.position.x !== clampedX) {
           // Recalculate Y to stay on planet surface at clamped X

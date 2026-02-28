@@ -169,7 +169,7 @@ const CRATERS = [
 function Planet({ palette }: { palette: ThemePalette }) {
   const R = PLANET_R;
   const svgSize = R * 2 + 20;
-  const planetPath = wobblyCirclePath(R, 42, 64, 0.03);
+  const planetPath = wobblyCirclePath(R, 42, 512, 0.005);
 
   return (
     <div
@@ -410,29 +410,46 @@ export const WorldScene = forwardRef<WorldSceneHandle, WorldSceneProps>(function
 
   const WeatherComp = WeatherEffects[weather] ?? null;
 
-  // ── Camera follow: smooth offset to keep creature visible ──
+  // ── Camera follow: always center creature ──
   const cameraRef = useRef({ x: 0, y: 0 });
+  const initializedRef = useRef(false);
   const [camera, setCamera] = useState({ x: 0, y: 0 });
 
+  // Camera framing: creature at horizontal center, vertical 65% from top
+  // (shows more sky above, planet surface below — natural ground-based framing)
+  const FRAME_X = CANVAS.width / 2;
+  const FRAME_Y = CANVAS.height * 0.65;
+
+  // Snap camera to creature on first render / recalibration
   useEffect(() => {
-    // Target: creature centered in viewport
-    const targetX = CANVAS.width / 2 - creaturePos.x;
-    const targetY = CANVAS.height / 2 - creaturePos.y;
-    // Smooth lerp toward target (low value = buttery slow follow)
-    const lerp = 0.04;
+    const targetX = FRAME_X - creaturePos.x;
+    const targetY = FRAME_Y - creaturePos.y;
+
+    if (!initializedRef.current) {
+      cameraRef.current = { x: targetX, y: targetY };
+      setCamera({ x: targetX, y: targetY });
+      initializedRef.current = true;
+      return;
+    }
+
+    const lerp = 0.08;
     const cam = cameraRef.current;
     const newX = cam.x + (targetX - cam.x) * lerp;
     const newY = cam.y + (targetY - cam.y) * lerp;
-    // Only apply offset when creature strays from the default resting zone
-    // (deadzone: no offset when creature is near center of canvas)
-    const DEADZONE = 80;
-    const dx = Math.abs(targetX);
-    const dy = Math.abs(targetY);
-    const applyX = dx > DEADZONE ? newX : newX * 0.5;
-    const applyY = dy > DEADZONE ? newY : newY * 0.5;
-    cameraRef.current = { x: applyX, y: applyY };
-    setCamera({ x: applyX, y: applyY });
+    cameraRef.current = { x: newX, y: newY };
+    setCamera({ x: newX, y: newY });
   }, [creaturePos.x, creaturePos.y]);
+
+  // Recalibrate: snap camera when creature spec changes (evolution/synthesis)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const targetX = FRAME_X - creaturePos.x;
+      const targetY = FRAME_Y - creaturePos.y;
+      cameraRef.current = { x: targetX, y: targetY };
+      setCamera({ x: targetX, y: targetY });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [creatureSpec]);
 
   return (
     <div className="world-canvas" style={{ width: CANVAS.width, height: CANVAS.height }}>
