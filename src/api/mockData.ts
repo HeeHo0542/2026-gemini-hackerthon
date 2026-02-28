@@ -58,8 +58,8 @@ export const MOCK_ENVIRONMENT: Environment = {
   },
   playerAxes: { energy: 'HIGH', physical: 'HIGH', purity: 'LOW' },
   worldEvents: [
-    { type: 'setGravity', x: 0, y: 1.2 },
-    { type: 'addBody', preset: 'rock', x: 200, y: 300 },
+    { type: 'setGravity', scale: 1.2 },
+    { type: 'addBody', bodyType: 'stone', x: 200, y: 300 },
   ],
 };
 
@@ -120,6 +120,6 @@ export const MOCK_SYNTHESIS: SynthesisResult = {
     body: { shape: 'roundRect', width: 140, height: 115, color: '#7b68ee', stroke: '#444' },
   },
   worldEvents: [
-    { type: 'addBody', preset: 'crystal', x: 300, y: 200 },
+    { type: 'addBody', bodyType: 'ball', x: 300, y: 200 },
   ],
 };

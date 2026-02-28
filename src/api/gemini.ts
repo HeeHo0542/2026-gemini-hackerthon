@@ -42,7 +42,13 @@ function mockDelay(): Promise<void> {
 }
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY as string;
-const ai = new GoogleGenAI({ apiKey: API_KEY });
+
+// Lazy-init so debug mode doesn't crash when API key is missing
+let _ai: GoogleGenAI | null = null;
+function getAI(): GoogleGenAI {
+  if (!_ai) _ai = new GoogleGenAI({ apiKey: API_KEY });
+  return _ai;
+}
 
 const BASE_CONFIG = {
   temperature: 0.9,
@@ -62,7 +68,7 @@ export async function generateCreature(keyword1: string, keyword2: string): Prom
   const userPrompt = buildCreatureUserPrompt(keyword1, keyword2);
 
   return callWithRetry(async () => {
-    const response = await ai.models.generateContent({
+    const response = await getAI().models.generateContent({
       model: 'gemini-2.5-flash',
       contents: userPrompt,
       config: {
@@ -92,7 +98,7 @@ export async function generateEnvironment(
   const userPrompt = buildEnvironmentUserPrompt(creature, chaosLevel, prevEnv);
 
   return callWithRetry(async () => {
-    const response = await ai.models.generateContent({
+    const response = await getAI().models.generateContent({
       model: 'gemini-2.5-flash',
       contents: userPrompt,
       config: {
@@ -121,7 +127,7 @@ export async function generateEvolution(
   const userPrompt = buildEvolutionUserPrompt(creature, environment);
 
   return callWithRetry(async () => {
-    const response = await ai.models.generateContent({
+    const response = await getAI().models.generateContent({
       model: 'gemini-2.5-flash',
       contents: userPrompt,
       config: {
@@ -151,7 +157,7 @@ export async function generateTrial(
   const userPrompt = buildTrialUserPrompt(creature, environment, chaosLevel);
 
   return callWithRetry(async () => {
-    const response = await ai.models.generateContent({
+    const response = await getAI().models.generateContent({
       model: 'gemini-2.5-flash',
       contents: userPrompt,
       config: {
@@ -181,7 +187,7 @@ export async function generateSynthesis(
   const userPrompt = buildSynthesisUserPrompt(creature, trialResult, newKeyword);
 
   return callWithRetry(async () => {
-    const response = await ai.models.generateContent({
+    const response = await getAI().models.generateContent({
       model: 'gemini-2.5-flash',
       contents: userPrompt,
       config: {
