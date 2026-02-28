@@ -160,8 +160,16 @@ function Additions({ additions = [] }: { additions?: AdditionSpec[] }) {
   return (
     <>
       {additions.map((item, i) => {
-        const { el, props = {}, fill, stroke, strokeWidth } = item;
-        const common = { fill, stroke, strokeWidth, ...props };
+        // Gather all SVG attributes from the flat spec
+        const { el, props = {}, fill, stroke, strokeWidth, opacity, transform,
+          d, cx, cy, r, rx, ry, x, y, width, height, x1, y1, x2, y2, points } = item;
+        const svgAttrs: Record<string, unknown> = {
+          fill, stroke, strokeWidth, opacity, transform,
+          d, cx, cy, r, rx, ry, x, y, width, height, x1, y1, x2, y2, points,
+          ...props, // legacy passthrough overrides
+        };
+        // Remove undefined values
+        const common = Object.fromEntries(Object.entries(svgAttrs).filter(([, v]) => v !== undefined));
         switch (el) {
           case 'ellipse':
             return <ellipse key={i} {...common} />;
@@ -170,13 +178,13 @@ function Additions({ additions = [] }: { additions?: AdditionSpec[] }) {
           case 'rect':
             return <rect key={i} {...common} />;
           case 'path':
-            return <path key={i} {...common} fill={fill || 'none'} />;
+            return <path key={i} {...common} fill={fill ?? 'none'} />;
           case 'line':
             return <line key={i} {...common} fill="none" stroke={stroke || '#222'} strokeWidth={strokeWidth || 2} />;
           case 'polygon':
             return <polygon key={i} {...common} />;
           case 'polyline':
-            return <polyline key={i} {...common} fill={fill || 'none'} stroke={stroke || '#222'} />;
+            return <polyline key={i} {...common} fill={fill ?? 'none'} stroke={stroke || '#222'} />;
           default:
             return null;
         }
@@ -209,10 +217,19 @@ export function CreatureRenderer({ spec, size = 200, className = '' }: CreatureR
       className={className}
       style={{ overflow: 'visible' }}
     >
-      <BodyShape {...body} />
-      <Additions additions={additions} />
-      <Eyes {...eyes} />
-      <Mouth {...mouth} />
+      <defs>
+        {/* Hand-drawn wobble filter — applied to ALL creature elements */}
+        <filter id="creature-wobble" x="-10%" y="-10%" width="120%" height="120%">
+          <feTurbulence type="turbulence" baseFrequency="0.04" numOctaves="3" seed="7" result="wobble" />
+          <feDisplacementMap in="SourceGraphic" in2="wobble" scale="4" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+      </defs>
+      <g filter="url(#creature-wobble)">
+        <BodyShape {...body} />
+        <Additions additions={additions} />
+        <Eyes {...eyes} />
+        <Mouth {...mouth} />
+      </g>
     </svg>
   );
 }

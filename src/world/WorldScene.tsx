@@ -1,4 +1,4 @@
-import { useMemo, useCallback, forwardRef, useImperativeHandle } from 'react';
+import { useMemo, useCallback, forwardRef, useImperativeHandle, useState, useEffect, useRef } from 'react';
 import { CreatureRenderer } from './CreatureRenderer';
 import {
   usePhysicsWorld,
@@ -376,6 +376,10 @@ export interface WorldSceneProps {
   creatureSpec?: CreatureSpec;
   creatureSize?: number;
   theme?: WorldTheme;
+  /** Atmosphere tint color from environment visual_tone (e.g. "#ff4400") */
+  atmosphereColor?: string;
+  /** Atmosphere opacity 0-1 */
+  atmosphereOpacity?: number;
 }
 
 export interface WorldSceneHandle {
@@ -384,7 +388,7 @@ export interface WorldSceneHandle {
 }
 
 export const WorldScene = forwardRef<WorldSceneHandle, WorldSceneProps>(function WorldScene(
-  { weather = 'none', creatureSpec, creatureSize = 220, theme = 'dark' },
+  { weather = 'none', creatureSpec, creatureSize = 220, theme = 'dark', atmosphereColor, atmosphereOpacity = 0.15 },
   ref,
 ) {
   const spec = creatureSpec ?? DEFAULT_SPEC;
@@ -400,41 +404,90 @@ export const WorldScene = forwardRef<WorldSceneHandle, WorldSceneProps>(function
 
   const WeatherComp = WeatherEffects[weather] ?? null;
 
+  // ── Camera follow: smooth offset to keep creature visible ──
+  const cameraRef = useRef({ x: 0, y: 0 });
+  const [camera, setCamera] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    // Target: creature centered in viewport
+    const targetX = CANVAS.width / 2 - creaturePos.x;
+    const targetY = CANVAS.height / 2 - creaturePos.y;
+    // Smooth lerp toward target
+    const lerp = 0.08;
+    const cam = cameraRef.current;
+    const newX = cam.x + (targetX - cam.x) * lerp;
+    const newY = cam.y + (targetY - cam.y) * lerp;
+    // Only apply offset when creature strays from the default resting zone
+    // (deadzone: no offset when creature is near center of canvas)
+    const DEADZONE = 80;
+    const dx = Math.abs(targetX);
+    const dy = Math.abs(targetY);
+    const applyX = dx > DEADZONE ? newX : newX * 0.5;
+    const applyY = dy > DEADZONE ? newY : newY * 0.5;
+    cameraRef.current = { x: applyX, y: applyY };
+    setCamera({ x: applyX, y: applyY });
+  }, [creaturePos.x, creaturePos.y]);
+
   return (
     <div className="world-canvas" style={{ width: CANVAS.width, height: CANVAS.height }}>
       {/* SVG filter defs — wobble for hand-drawn feel */}
       <svg width="0" height="0" style={{ position: 'absolute' }}>
         <defs>
           <filter id="sketchy" x="-15%" y="-15%" width="130%" height="130%">
-            <feTurbulence type="turbulence" baseFrequency="0.04" numOctaves="4" seed="2" result="noise" />
-            <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.5" xChannelSelector="R" yChannelSelector="G" />
+            <feTurbulence type="turbulence" baseFrequency="0.035" numOctaves="4" seed="2" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="3.5" xChannelSelector="R" yChannelSelector="G" />
           </filter>
         </defs>
       </svg>
 
-      {/* Weather layer */}
+      {/* Weather layer (stays fixed to viewport, not camera) */}
       {WeatherComp && <WeatherComp />}
 
-      {/* Planet */}
-      <Planet palette={palette} />
+      {/* Atmosphere tint from environment visual_tone */}
+      {atmosphereColor && (
+        <div
+          className="world-atmosphere"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: `radial-gradient(ellipse at 50% 80%, ${atmosphereColor}, transparent 70%)`,
+            opacity: atmosphereOpacity,
+            pointerEvents: 'none',
+            zIndex: 8,
+            transition: 'opacity 2s ease, background 2s ease',
+          }}
+        />
+      )}
 
-      {/* Physics bodies */}
-      {bodies.map((b) => (
-        <PhysicsBody key={b.id} body={b} palette={palette} />
-      ))}
-
-      {/* Creature — positioned by physics engine */}
+      {/* Camera-tracked world content */}
       <div
-        className="world-creature"
+        className="world-camera"
         style={{
-          left: creaturePos.x,
-          top: creaturePos.y,
-          transform: `translate(-50%, -50%) rotate(${creaturePos.angle}rad)`,
-          filter: 'url(#sketchy)',
+          transform: `translate(${camera.x}px, ${camera.y}px)`,
+          position: 'absolute',
+          inset: 0,
         }}
       >
-        <div className={`movement-${spec.movement}`}>
-          <CreatureRenderer spec={spec} size={creatureSize} />
+        {/* Planet */}
+        <Planet palette={palette} />
+
+        {/* Physics bodies */}
+        {bodies.map((b) => (
+          <PhysicsBody key={b.id} body={b} palette={palette} />
+        ))}
+
+        {/* Creature — positioned by physics engine */}
+        <div
+          className="world-creature"
+          style={{
+            left: creaturePos.x,
+            top: creaturePos.y,
+            transform: `translate(-50%, -50%) rotate(${creaturePos.angle}rad)`,
+          }}
+        >
+          <div className={`movement-${spec.movement}`}>
+            <CreatureRenderer spec={spec} size={creatureSize} />
+          </div>
         </div>
       </div>
     </div>

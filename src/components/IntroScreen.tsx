@@ -1,9 +1,11 @@
-import { useState } from "react";
 import { EMOJI_CATEGORIES } from "../game/emojiCategories";
+import { useState, useEffect, useRef } from "react";
 
 interface IntroScreenProps {
   onStart: (k1: string, k2: string) => void;
 }
+
+const DEBUG_KEYWORDS: [string, string] = ["불", "물"];
 
 export default function IntroScreen({ onStart }: IntroScreenProps) {
   const [selected, setSelected] = useState<[string | null, string | null]>([
@@ -11,6 +13,17 @@ export default function IntroScreen({ onStart }: IntroScreenProps) {
     null,
   ]);
   const [activeCategory, setActiveCategory] = useState("animals");
+  const didSkip = useRef(false);
+
+  // Debug: auto-skip intro with ?debug=skip
+  useEffect(() => {
+    if (didSkip.current) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("debug") === "skip") {
+      didSkip.current = true;
+      onStart(DEBUG_KEYWORDS[0], DEBUG_KEYWORDS[1]);
+    }
+  }, [onStart]);
 
   const canStart = selected[0] !== null && selected[1] !== null;
 

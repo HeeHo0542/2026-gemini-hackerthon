@@ -5,9 +5,10 @@ import type { PhysicsBodySnapshot, CreaturePosition, PhysicsCommand } from './ty
 const { Engine, Bodies, Body, Composite } = Matter;
 
 export const CANVAS = { width: 840, height: 640 };
-export const PLANET_R = 620;
-export const PLANET_CENTER = { x: 420, y: 920 };
+export const PLANET_R = 6000;
+export const PLANET_CENTER = { x: 420, y: 6300 };
 const CREATURE_R = 42;
+const MAX_CREATURE_SPEED = 5; // px per physics step — keeps creature visible
 
 // ── Seeded wobble for stable doodly shapes ─────────────────
 function seededRandom(seed: number) {
@@ -114,12 +115,60 @@ export function usePhysicsWorld() {
 
       Engine.update(engine, dt);
 
+      // Clamp creature velocity so it doesn't fly off
+      {
+        const cv = creatureRef.current!.velocity;
+        const speed = Math.sqrt(cv.x * cv.x + cv.y * cv.y);
+        if (speed > MAX_CREATURE_SPEED) {
+          const s = MAX_CREATURE_SPEED / speed;
+          Body.setVelocity(creatureRef.current!, { x: cv.x * s, y: cv.y * s });
+        }
+      }
+
+      // Surface constraint — prevent creature from tunneling into the planet
+      {
+        const cr = creatureRef.current!;
+        const dx = cr.position.x - PLANET_CENTER.x;
+        const dy = cr.position.y - PLANET_CENTER.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const minDist = PLANET_R + CREATURE_R;
+        if (dist < minDist && dist > 0) {
+          const nx = dx / dist;
+          const ny = dy / dist;
+          Body.setPosition(cr, {
+            x: PLANET_CENTER.x + nx * minDist,
+            y: PLANET_CENTER.y + ny * minDist,
+          });
+          const vDot = cr.velocity.x * nx + cr.velocity.y * ny;
+          if (vDot < 0) {
+            Body.setVelocity(cr, {
+              x: cr.velocity.x - vDot * nx,
+              y: cr.velocity.y - vDot * ny,
+            });
+          }
+        }
+      }
+
+      // Hard boundary — creature stays within visible area (±margin around canvas)
+      {
+        const cr = creatureRef.current!;
+        const MARGIN = 200;
+        const clampedX = Math.max(-MARGIN, Math.min(CANVAS.width + MARGIN, cr.position.x));
+        if (cr.position.x !== clampedX) {
+          // Recalculate Y to stay on planet surface at clamped X
+          const dx = clampedX - PLANET_CENTER.x;
+          const surfaceY = PLANET_CENTER.y - Math.sqrt(Math.max(0, (PLANET_R + CREATURE_R) ** 2 - dx * dx));
+          Body.setPosition(cr, { x: clampedX, y: surfaceY });
+          Body.setVelocity(cr, { x: 0, y: cr.velocity.y });
+        }
+      }
+
       // Cleanup — remove bodies that drifted too far
       for (const b of dynamicBodies) {
         if (b.label === 'creature') continue;
         const dx = b.position.x - PLANET_CENTER.x;
         const dy = b.position.y - PLANET_CENTER.y;
-        if (dx * dx + dy * dy > 1200 * 1200) {
+        if (dx * dx + dy * dy > (PLANET_R + 600) * (PLANET_R + 600)) {
           Composite.remove(engine.world, b);
         }
       }
