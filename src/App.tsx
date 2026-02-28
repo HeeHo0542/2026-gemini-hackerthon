@@ -28,7 +28,11 @@ import { getChaosLevel } from "./game/environment";
 import { executeWorldEvents } from "./game/worldEventExecutor";
 import { normalizeCreatureSpec } from "./api/schemas";
 import { useAuth } from "./lib/auth";
-import { createSession, saveGameEvent, saveGameState } from "./game/firestorePersistence";
+import {
+  createSession,
+  saveGameEvent,
+  saveGameState,
+} from "./game/firestorePersistence";
 
 function mergeCreatureSpec(
   current: CreatureSpec | undefined,
@@ -121,7 +125,9 @@ function GamePage() {
         phase: (phaseOverride ?? phase) as import("./game/types").GamePhase,
         round,
         chaosLevel: getChaosLevel(round),
-        creature: creatureRef.current as import("./game/types").GameCreature | null,
+        creature: creatureRef.current as
+          | import("./game/types").GameCreature
+          | null,
         environment: null,
         evolution: null,
         trial: null,
@@ -161,9 +167,12 @@ function GamePage() {
 
     // Auto-proceed after AI-decided duration
     if (envTimerRef.current) clearTimeout(envTimerRef.current);
-    envTimerRef.current = setTimeout(() => {
-      proceedRef.current();
-    }, (env.durationSeconds ?? 10) * 1000);
+    envTimerRef.current = setTimeout(
+      () => {
+        proceedRef.current();
+      },
+      (env.durationSeconds ?? 10) * 1000,
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -285,7 +294,8 @@ function GamePage() {
     };
     setCreature(evolvedCreature);
 
-    const tradeoffText = evo.tradeoffs.length > 0 ? `\n${evo.tradeoffs.join(' / ')}` : '';
+    const tradeoffText =
+      evo.tradeoffs.length > 0 ? `\n${evo.tradeoffs.join(" / ")}` : "";
     const evoEvent: HistoryEvent = {
       type: "evolution",
       title: evo.newName,
@@ -468,11 +478,7 @@ function GamePage() {
   };
 
   if (phase === "intro") {
-    return (
-      <IntroScreen
-        onStart={handleStart}
-      />
-    );
+    return <IntroScreen onStart={handleStart} />;
   }
 
   const actionButtons: ActionButton[] = [];
@@ -485,7 +491,9 @@ function GamePage() {
   }
 
   return (
-    <div className={`game-layout${historyCollapsed ? ' game-layout--history-collapsed' : ''}`}>
+    <div
+      className={`game-layout${historyCollapsed ? " game-layout--history-collapsed" : ""}`}
+    >
       {/* SVG sketchy filter (used by world.css .physics-body) */}
       <svg style={{ position: "absolute", width: 0, height: 0 }}>
         <defs>
@@ -525,15 +533,15 @@ function GamePage() {
         worldRef={worldRef}
         onProceed={handleProceedFromEnvironment}
         durationSeconds={environment?.durationSeconds}
-        isDead={phase === 'epilogue' && trial?.survived === false}
+        isDead={phase === "epilogue" && trial?.survived === false}
       >
-        {phase === "epilogue" && trial && (
+        {/* {phase === "epilogue" && trial && (
           <EpilogueView
             trial={trial}
             creature={creature}
             onRestart={handleRestart}
           />
-        )}
+        )} */}
       </MainStage>
 
       <HistoryPanel
