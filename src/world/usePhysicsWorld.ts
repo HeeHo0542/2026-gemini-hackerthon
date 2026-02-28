@@ -8,6 +8,7 @@ export const CANVAS = { width: 840, height: 640 };
 export const PLANET_R = 620;
 export const PLANET_CENTER = { x: 420, y: 920 };
 const CREATURE_R = 42;
+const MAX_CREATURE_SPEED = 5; // px per physics step — keeps creature visible
 
 // ── Seeded wobble for stable doodly shapes ─────────────────
 function seededRandom(seed: number) {
@@ -113,6 +114,16 @@ export function usePhysicsWorld() {
       }
 
       Engine.update(engine, dt);
+
+      // Clamp creature velocity so it doesn't fly off
+      {
+        const cv = creatureRef.current!.velocity;
+        const speed = Math.sqrt(cv.x * cv.x + cv.y * cv.y);
+        if (speed > MAX_CREATURE_SPEED) {
+          const s = MAX_CREATURE_SPEED / speed;
+          Body.setVelocity(creatureRef.current!, { x: cv.x * s, y: cv.y * s });
+        }
+      }
 
       // Cleanup — remove bodies that drifted too far
       for (const b of dynamicBodies) {
