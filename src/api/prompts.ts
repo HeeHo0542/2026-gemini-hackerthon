@@ -101,7 +101,7 @@ OUTPUT SCHEMA:
     "luminosity": "pitch_dark | dim | normal | bright | scorching",
     "tectonics": "dead | stable | active | volatile | cataclysmic"
   },
-  "env_tags": ["서사 특성 태그 2~4개"],
+  "env_tags": ["2~4개. 반드시 아래 목록에서만 선택: acidic, corrosive_fog, frozen, volcanic, irradiated, submerged, desiccated, parasitic, zero_gravity, seismic, electrical, sandstorm, meteor_shower, solar_flare, pitch_dark, ash_fall, fungal_bloom, bioluminescent, toxic_spore, overgrowth, crystal_growth, magnetic_anomaly, tidal_surge, erosion, high_pressure"],
   "threat_category": "atmospheric | geological | celestial | chemical | hydrological | ecological | energetic | compound",
   "instability_index": "40~100 정수",
   "narrative": "3~4문장. 자연 다큐멘터리 톤. 관찰자 시점.",
@@ -141,11 +141,15 @@ VARIABLE RULES:
 - 이전 환경이 주어지면, 잔존 효과를 narrative에 반영할 것.
 
 DIVERSITY GUIDANCE (직접 복사하지 말고 변형 활용):
-- 화산/지열: 에너지 풍부 + 구조 파괴. "성장은 빠르지만 몸이 녹는다."
-- 빙하/극저온: 시간 동결 + 에너지 고갈. "잠들 것인가 깨어있을 것인가."
-- 방사선/플레어: 보이지 않는 공포. "겉은 멀쩡한데 안에서 무너진다."
-- 심해/고압: 빛 없는 세계. "새로운 에너지원을 찾거나 죽거나."
-- 건조/사막: 느린 죽음. "시간이 적이다."`;
+- 화산/지열: volcanic, ash_fall. 에너지 풍부 + 구조 파괴.
+- 빙하/극저온: frozen, crystal_growth. 시간 동결 + 에너지 고갈.
+- 방사선/플레어: irradiated, solar_flare. 보이지 않는 공포.
+- 심해/고압: submerged, high_pressure, tidal_surge. 빛 없는 세계.
+- 건조/사막: desiccated, sandstorm, erosion. 느린 죽음.
+- 폭풍/번개: electrical, seismic. 순간적 파괴력.
+- 생물학적: parasitic, fungal_bloom, toxic_spore, overgrowth. 천천히 잠식.
+- 우주적: meteor_shower, zero_gravity, magnetic_anomaly. 예측 불가능.
+- 혼합/고급: pitch_dark + bioluminescent, corrosive_fog + acidic. 태그를 조합하면 더 풍부한 장면.`;
 
 export const EVOLUTION_SYSTEM_PROMPT = `You are an evolution engine.
 Given a parent creature and an environment, generate its next evolutionary form.
