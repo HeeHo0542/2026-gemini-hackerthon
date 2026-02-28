@@ -647,7 +647,7 @@ Output schema:
 
 ## 6. 환경 시스템 (8축 → 3축)
 
-> 상세 내용은 **환경 시스템 완전 가이드** 문서 참조
+> 상세 내용은 **environment-setting-prompt** 문서 참조
 
 ### 아키텍처
 
