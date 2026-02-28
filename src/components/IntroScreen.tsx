@@ -1,23 +1,36 @@
-import { useState } from 'react';
+import { useState } from "react";
+import { EMOJI_CATEGORIES } from "../game/emojiCategories";
 
 interface IntroScreenProps {
   onStart: (k1: string, k2: string) => void;
 }
 
 export default function IntroScreen({ onStart }: IntroScreenProps) {
-  const [keyword1, setKeyword1] = useState('');
-  const [keyword2, setKeyword2] = useState('');
+  const [selected, setSelected] = useState<[string | null, string | null]>([
+    null,
+    null,
+  ]);
+  const [activeCategory, setActiveCategory] = useState("animals");
 
-  const canStart = keyword1.trim() && keyword2.trim();
+  const canStart = selected[0] !== null && selected[1] !== null;
+
+  const isEmojiSelected = (emoji: string) =>
+    selected[0] === emoji || selected[1] === emoji;
+
+  const handleEmojiClick = (emoji: string) => {
+    setSelected((prev) => {
+      if (prev[0] === emoji) return [null, prev[1]];
+      if (prev[1] === emoji) return [prev[0], null];
+      if (prev[0] === null) return [emoji, prev[1]];
+      if (prev[1] === null) return [prev[0], emoji];
+      return [prev[0], emoji];
+    });
+  };
 
   const handleStart = () => {
     if (canStart) {
-      onStart(keyword1.trim(), keyword2.trim());
+      onStart(selected[0]!, selected[1]!);
     }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && canStart) handleStart();
   };
 
   return (
@@ -26,32 +39,53 @@ export default function IntroScreen({ onStart }: IntroScreenProps) {
       <h1 className="intro__title">테라리움 에코</h1>
       <p className="intro__subtitle">Terrarium Echo</p>
 
-      <div className="intro__taglines">
-        <span className="intro__tagline">두 개의 키워드로 생명을 창조하세요</span>
-        <span className="intro__tagline">자연이 먼저 말합니다</span>
-        <span className="intro__tagline">당신은 단 한 번만 개입할 수 있습니다</span>
+      <div className="intro__selection-display">
+        <div
+          className={`intro__slot ${selected[0] ? "intro__slot--filled" : "intro__slot--empty"}`}
+          onClick={() => selected[0] && setSelected([null, selected[1]])}
+        >
+          {selected[0] || "?"}
+        </div>
+        <span className="intro__slot-divider">+</span>
+        <div
+          className={`intro__slot ${selected[1] ? "intro__slot--filled" : "intro__slot--empty"}`}
+          onClick={() => selected[1] && setSelected([selected[0], null])}
+        >
+          {selected[1] || "?"}
+        </div>
       </div>
 
-      <div className="intro__inputs">
-        <input
-          className="intro__input"
-          type="text"
-          placeholder="키워드 1"
-          value={keyword1}
-          onChange={(e) => setKeyword1(e.target.value)}
-          onKeyDown={handleKeyDown}
-        />
-        <input
-          className="intro__input"
-          type="text"
-          placeholder="키워드 2"
-          value={keyword2}
-          onChange={(e) => setKeyword2(e.target.value)}
-          onKeyDown={handleKeyDown}
-        />
+      <div className="intro__categories">
+        {EMOJI_CATEGORIES.map((cat) => (
+          <button
+            key={cat.id}
+            className={`intro__category-tab ${activeCategory === cat.id ? "intro__category-tab--active" : ""}`}
+            onClick={() => setActiveCategory(cat.id)}
+          >
+            {cat.icon} {cat.label}
+          </button>
+        ))}
       </div>
 
-      <button className="intro__button" disabled={!canStart} onClick={handleStart}>
+      <div className="intro__emoji-grid">
+        {EMOJI_CATEGORIES.find((c) => c.id === activeCategory)?.emojis.map(
+          (emoji) => (
+            <button
+              key={emoji}
+              className={`intro__emoji-cell ${isEmojiSelected(emoji) ? "intro__emoji-cell--selected" : ""}`}
+              onClick={() => handleEmojiClick(emoji)}
+            >
+              {emoji}
+            </button>
+          ),
+        )}
+      </div>
+
+      <button
+        className="intro__button"
+        disabled={!canStart}
+        onClick={handleStart}
+      >
         생명 창조
       </button>
     </div>

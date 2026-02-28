@@ -47,7 +47,6 @@ function mergeCreatureSpec(
 import IntroScreen from "./components/IntroScreen";
 import MainStage from "./components/MainStage";
 import HistoryPanel from "./components/HistoryPanel";
-import SynthesisView from "./components/SynthesisView";
 import EpilogueView from "./components/EpilogueView";
 import SandboxPage from "./pages/SandboxPage";
 import type { WorldSceneHandle } from "./world/WorldScene";
@@ -67,6 +66,14 @@ function GamePage() {
   const [history, setHistory] = useState<HistoryEvent[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [round, setRound] = useState(1);
+  const [historyCollapsed, setHistoryCollapsed] = useState(false);
+
+  // Auto-open history panel when synthesis phase starts
+  useEffect(() => {
+    if (phase === "synthesis") {
+      setHistoryCollapsed(false);
+    }
+  }, [phase]);
 
   // Clear timer on unmount
   useEffect(() => {
@@ -265,45 +272,37 @@ function GamePage() {
     setHistory((prev) => [...prev, evoEvent]);
     persistEvent(evoEvent);
 
-    // Auto-proceed to trial after showing evolution results
-    setTimeout(async () => {
-      setLoading(true);
-      setLoadingMessage("시련이 다가오고 있습니다...");
+    // Proceed to trial seamlessly (no blur overlay — creature stays visible)
+    const trialResult = await generateTrial(
+      evolvedCreature,
+      currentEnvironment,
+      getChaosLevel(evolvedCreature.generation ?? round),
+    );
+    console.log("[Trial]", trialResult);
 
-      const trialResult = await generateTrial(
-        evolvedCreature,
-        currentEnvironment,
-        getChaosLevel(evolvedCreature.generation ?? round),
-      );
-      console.log("[Trial]", trialResult);
-
-      if (trialResult) {
-        setTrial(trialResult);
-        await dispatchWorldEvents(trialResult.worldEvents);
-        const trialEvent: HistoryEvent = {
-          type: "trial",
-          title: trialResult.trialName,
-          summary: trialResult.survived
-            ? `생존 — 점수 ${trialResult.finalScore}`
-            : `멸종 — 점수 ${trialResult.finalScore}`,
-          detail: {
-            narrative: trialResult.narrative,
-            reason: trialResult.reason,
-            damageOrMutation: trialResult.damageOrMutation,
-            survived: trialResult.survived,
-            finalScore: trialResult.finalScore,
-            epitaph: trialResult.epitaph,
-            trialDescription: trialResult.trialDescription,
-          },
-        };
-        setHistory((prev) => [...prev, trialEvent]);
-        persistEvent(trialEvent);
-        setLoading(false);
-        setPhase(trialResult.survived ? "synthesis" : "epilogue");
-      } else {
-        setLoading(false);
-      }
-    }, 4000);
+    if (trialResult) {
+      setTrial(trialResult);
+      await dispatchWorldEvents(trialResult.worldEvents);
+      const trialEvent: HistoryEvent = {
+        type: "trial",
+        title: trialResult.trialName,
+        summary: trialResult.survived
+          ? `생존 — 점수 ${trialResult.finalScore}`
+          : `멸종 — 점수 ${trialResult.finalScore}`,
+        detail: {
+          narrative: trialResult.narrative,
+          reason: trialResult.reason,
+          damageOrMutation: trialResult.damageOrMutation,
+          survived: trialResult.survived,
+          finalScore: trialResult.finalScore,
+          epitaph: trialResult.epitaph,
+          trialDescription: trialResult.trialDescription,
+        },
+      };
+      setHistory((prev) => [...prev, trialEvent]);
+      persistEvent(trialEvent);
+      setPhase(trialResult.survived ? "synthesis" : "epilogue");
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [round]);
 
@@ -446,7 +445,7 @@ function GamePage() {
   }
 
   return (
-    <div className="game-layout">
+    <div className={`game-layout${historyCollapsed ? ' game-layout--history-collapsed' : ''}`}>
       {/* SVG sketchy filter (used by world.css .physics-body) */}
       <svg style={{ position: "absolute", width: 0, height: 0 }}>
         <defs>
@@ -482,20 +481,11 @@ function GamePage() {
         creature={creature ?? undefined}
         environment={environment ?? undefined}
         evolution={evolution ?? undefined}
-        trial={trial ?? undefined}
         actionButtons={actionButtons}
         worldRef={worldRef}
         onProceed={handleProceedFromEnvironment}
         durationSeconds={environment?.durationSeconds}
       >
-        {phase === "synthesis" && trial && creature && (
-          <SynthesisView
-            creature={creature}
-            trial={trial}
-            onSynthesize={handleSynthesis}
-            onSkip={handleSkipSynthesis}
-          />
-        )}
         {phase === "epilogue" && trial && (
           <EpilogueView
             trial={trial}
@@ -505,7 +495,17 @@ function GamePage() {
         )}
       </MainStage>
 
-      <HistoryPanel history={history} activeIndex={history.length - 1} />
+      <HistoryPanel
+        history={history}
+        activeIndex={history.length - 1}
+        phase={phase}
+        creature={creature ?? undefined}
+        onSynthesize={handleSynthesis}
+        onSkip={handleSkipSynthesis}
+        synthesisHint={trial?.synthesisHint}
+        collapsed={historyCollapsed}
+        onToggleCollapse={() => setHistoryCollapsed((c) => !c)}
+      />
     </div>
   );
 }

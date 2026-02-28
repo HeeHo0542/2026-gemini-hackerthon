@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type {
+  Creature,
   HistoryEvent,
   HistoryEventDetail,
   BirthDetail,
@@ -8,10 +9,19 @@ import type {
   TrialDetail,
   SynthesisDetail,
 } from '../types';
+import { EMOJI_CATEGORIES } from '../game/emojiCategories';
+import StatBar from './StatBar';
 
 interface HistoryPanelProps {
   history?: HistoryEvent[];
   activeIndex?: number;
+  phase?: string;
+  creature?: Creature;
+  onSynthesize?: (keyword: string) => void;
+  onSkip?: () => void;
+  synthesisHint?: string;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 function renderStatChange(label: string, value: number) {
@@ -185,49 +195,211 @@ function renderDetail(type: string, detail: HistoryEventDetail) {
   }
 }
 
-export default function HistoryPanel({ history = [], activeIndex }: HistoryPanelProps) {
+export default function HistoryPanel({ history = [], activeIndex, phase, creature, onSynthesize, onSkip, synthesisHint, collapsed, onToggleCollapse }: HistoryPanelProps) {
+  const [activeTab, setActiveTab] = useState<'history' | 'stats'>('history');
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+  const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = useState('animals');
+  const timelineRef = useRef<HTMLDivElement>(null);
+  const lastNodeRef = useRef<HTMLDivElement>(null);
+  const synthRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    lastNodeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [history.length]);
+
+  useEffect(() => {
+    if (phase === 'synthesis') {
+      setSelectedEmoji(null);
+      synthRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [phase]);
+
+  const handleSynthSubmit = () => {
+    if (selectedEmoji && onSynthesize) {
+      onSynthesize(selectedEmoji);
+      setSelectedEmoji(null);
+    }
+  };
 
   const handleNodeClick = (index: number) => {
     setExpandedIndex(expandedIndex === index ? null : index);
   };
 
-  return (
-    <aside className="history">
-      <div className="history__header">History</div>
-      <div className="history__timeline">
-        {history.map((event, i) => {
-          const isExpanded = expandedIndex === i;
-          const hasDetail = !!event.detail;
+  const needsAttention = phase === 'synthesis' && !!onSynthesize;
 
-          return (
-            <div
-              key={i}
-              className={`history__node ${i === activeIndex ? 'history__node--active' : ''} ${isExpanded ? 'history__node--expanded' : ''}`}
-              onClick={() => hasDetail && handleNodeClick(i)}
-              style={{ cursor: hasDetail ? 'pointer' : 'default' }}
-            >
-              <div className={`history__dot history__dot--${event.type}`} />
-              <div className="history__info">
-                <div className="history__title">
-                  {event.title}
-                  {hasDetail && (
-                    <span className={`history__expand-icon ${isExpanded ? 'history__expand-icon--open' : ''}`}>
-                      &#x25BE;
-                    </span>
+  return (
+    <aside className={`history${collapsed ? ' history--collapsed' : ''}`}>
+      {/* Vertical bookmark tabs (always visible) */}
+      <div className="history__sidebar-tabs">
+        <button
+          className={`history__sidebar-tab${activeTab === 'history' ? ' history__sidebar-tab--active' : ''}`}
+          onClick={() => { if (collapsed) onToggleCollapse?.(); setActiveTab('history'); }}
+        >
+          <span className="history__sidebar-tab-label">History</span>
+          {needsAttention && <span className="history__toggle-badge" />}
+        </button>
+        <button
+          className={`history__sidebar-tab${activeTab === 'stats' ? ' history__sidebar-tab--active' : ''}`}
+          onClick={() => { if (collapsed) onToggleCollapse?.(); setActiveTab('stats'); }}
+        >
+          <span className="history__sidebar-tab-label">Stats</span>
+        </button>
+        {!collapsed && (
+          <button className="history__sidebar-collapse" onClick={onToggleCollapse} title="패널 접기">
+            &#x25B6;
+          </button>
+        )}
+      </div>
+
+      {/* Tab content (hidden when collapsed) */}
+      {!collapsed && (
+        <div className="history__tab-content">
+          {activeTab === 'history' ? (
+            <div className="history__timeline" ref={timelineRef}>
+              {history.map((event, i) => {
+                const isExpanded = expandedIndex === i;
+                const hasDetail = !!event.detail;
+
+                return (
+                  <div
+                    key={i}
+                    ref={i === history.length - 1 ? lastNodeRef : undefined}
+                    className={`history__node ${i === activeIndex ? 'history__node--active' : ''} ${isExpanded ? 'history__node--expanded' : ''}`}
+                    onClick={() => hasDetail && handleNodeClick(i)}
+                    style={{ cursor: hasDetail ? 'pointer' : 'default' }}
+                  >
+                    <div className={`history__dot history__dot--${event.type}`} />
+                    <div className="history__info">
+                      <div className="history__title">
+                        {event.title}
+                        {hasDetail && (
+                          <span className={`history__expand-icon ${isExpanded ? 'history__expand-icon--open' : ''}`}>
+                            &#x25BE;
+                          </span>
+                        )}
+                      </div>
+                      <div className={`history__summary${event.type === 'evolution' ? ' history__summary--evolution' : ''}`}>
+                        {event.summary}
+                      </div>
+                      <div className={`history__detail ${isExpanded ? 'history__detail--open' : ''}`}>
+                        {isExpanded && event.detail && renderDetail(event.type, event.detail)}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {phase === 'synthesis' && onSynthesize && (
+                <div className={`history__synthesis${needsAttention ? ' history__synthesis--attention' : ''}`} ref={synthRef}>
+                  <div className="history__synthesis-header">시련을 이겨냈습니다!</div>
+                  {synthesisHint && (
+                    <p className="history__synthesis-hint">"{synthesisHint}"</p>
+                  )}
+
+                  <div className="history__synthesis-slot">
+                    {selectedEmoji || '?'}
+                  </div>
+
+                  <div className="history__synthesis-categories">
+                    {EMOJI_CATEGORIES.map((cat) => (
+                      <button
+                        key={cat.id}
+                        className={`history__synthesis-cat ${activeCategory === cat.id ? 'history__synthesis-cat--active' : ''}`}
+                        onClick={() => setActiveCategory(cat.id)}
+                      >
+                        {cat.icon}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="history__synthesis-grid">
+                    {EMOJI_CATEGORIES.find((c) => c.id === activeCategory)?.emojis.map((emoji) => (
+                      <button
+                        key={emoji}
+                        className={`history__synthesis-emoji ${selectedEmoji === emoji ? 'history__synthesis-emoji--selected' : ''}`}
+                        onClick={() => setSelectedEmoji(selectedEmoji === emoji ? null : emoji)}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    className="history__synthesis-btn history__synthesis-btn--primary"
+                    disabled={!selectedEmoji}
+                    onClick={handleSynthSubmit}
+                  >
+                    합성하기
+                  </button>
+                  {onSkip && (
+                    <button className="history__synthesis-btn history__synthesis-btn--secondary" onClick={onSkip}>
+                      합성 없이 계속
+                    </button>
                   )}
                 </div>
-                <div className={`history__summary${event.type === 'evolution' ? ' history__summary--evolution' : ''}`}>
-                  {event.summary}
-                </div>
-                <div className={`history__detail ${isExpanded ? 'history__detail--open' : ''}`}>
-                  {isExpanded && event.detail && renderDetail(event.type, event.detail)}
-                </div>
-              </div>
+              )}
             </div>
-          );
-        })}
-      </div>
+          ) : (
+            <div className="history__stats-content">
+              {creature ? (
+                <>
+                  <div className="history__creature-header">
+                    <h2 className="history__creature-name">{creature.name}</h2>
+                    <div className="history__creature-meta">
+                      <span>{creature.species}</span>
+                      {creature.generation && <span>Gen {creature.generation}</span>}
+                    </div>
+                  </div>
+
+                  <div className="history__detail-section">
+                    <span className="history__detail-label">스탯</span>
+                    <div className="history__creature-stats">
+                      {Object.entries(creature.stats).map(([key, val]) => (
+                        <StatBar key={key} stat={key} value={val} />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="history__detail-section">
+                    <span className="history__detail-label">특성</span>
+                    <div className="history__detail-tags">
+                      {creature.traits.map((t, i) => (
+                        <span key={i} className="history__tag history__tag--trait">{t}</span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {creature.vulnerabilities.length > 0 && (
+                    <div className="history__detail-section">
+                      <span className="history__detail-label">약점</span>
+                      <div className="history__detail-tags">
+                        {creature.vulnerabilities.map((v, i) => (
+                          <span key={i} className="history__tag history__tag--vulnerability">{v}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {creature.energyStrategy && (
+                    <div className="history__detail-row">
+                      <span className="history__detail-label">에너지 전략</span>
+                      <span className="history__detail-value">{creature.energyStrategy}</span>
+                    </div>
+                  )}
+
+                  <div className="history__detail-row">
+                    <span className="history__detail-label">탄생 키워드</span>
+                    <span className="history__detail-value history__detail-value--italic">{creature.birthWords}</span>
+                  </div>
+                </>
+              ) : (
+                <p className="history__stats-empty">아직 생명이 없습니다</p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </aside>
   );
 }

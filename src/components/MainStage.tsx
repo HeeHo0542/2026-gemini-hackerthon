@@ -1,7 +1,6 @@
 import type { RefObject, ReactNode } from 'react';
-import type { Creature, Environment, EvolutionResult, TrialResult, ActionButton } from '../types';
+import type { Creature, Environment, EvolutionResult, ActionButton } from '../types';
 import { WorldScene, type WorldSceneHandle } from '../world/WorldScene';
-import TrialView from './TrialView';
 import ActionButtons from './ActionButtons';
 import EnvironmentEffects from './EnvironmentEffects';
 
@@ -10,7 +9,6 @@ interface MainStageProps {
   creature?: Creature;
   environment?: Environment;
   evolution?: EvolutionResult;
-  trial?: TrialResult;
   actionButtons?: ActionButton[];
   worldRef?: RefObject<WorldSceneHandle | null>;
   onProceed?: () => void;
@@ -23,7 +21,6 @@ export default function MainStage({
   creature,
   environment,
   evolution,
-  trial,
   actionButtons,
   worldRef,
   onProceed,
@@ -67,9 +64,7 @@ export default function MainStage({
       )}
 
       <div className="stage__content">
-        {phase === 'trial' && trial ? (
-          <TrialView trial={trial} />
-        ) : phase === 'synthesis' || phase === 'epilogue' ? (
+        {phase === 'epilogue' ? (
           children
         ) : (
           creature && (
