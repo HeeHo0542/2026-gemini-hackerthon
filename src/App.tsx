@@ -99,8 +99,10 @@ function GamePage() {
   };
 
   const persistEvent = async (event: HistoryEvent) => {
-    if (uid && sessionId) {
-      saveGameEvent(uid, sessionId, event).catch(console.error);
+    const currentUid = uidRef.current;
+    const currentSessionId = sessionIdRef.current;
+    if (currentUid && currentSessionId) {
+      saveGameEvent(currentUid, currentSessionId, event).catch(console.error);
     }
   };
 
@@ -139,7 +141,10 @@ function GamePage() {
     // Create Firestore session
     if (uid) {
       const sid = await createSession(uid).catch(() => null);
-      if (sid) setSessionId(sid);
+      if (sid) {
+        setSessionId(sid);
+        sessionIdRef.current = sid;
+      }
     }
 
     const newCreature = await generateCreature(k1, k2);
@@ -274,6 +279,10 @@ function GamePage() {
   creatureRef.current = creature;
   const environmentRef = useRef(environment);
   environmentRef.current = environment;
+  const uidRef = useRef(uid);
+  uidRef.current = uid;
+  const sessionIdRef = useRef(sessionId);
+  sessionIdRef.current = sessionId;
   const proceedRef = useRef(handleProceedFromEnvironment);
   proceedRef.current = handleProceedFromEnvironment;
 
