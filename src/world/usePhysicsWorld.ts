@@ -216,8 +216,20 @@ export function usePhysicsWorld(isDead = false) {
     };
     raf = requestAnimationFrame(step);
 
+    // Recalibrate creature angle every 3s — hard snap to upright
+    const recalibrate = setInterval(() => {
+      const cr = creatureRef.current;
+      if (!cr || isDeadRef.current) return;
+      const dx = cr.position.x - PLANET_CENTER.x;
+      const dy = cr.position.y - PLANET_CENTER.y;
+      const upright = Math.atan2(dx, -dy);
+      Body.setAngle(cr, upright);
+      Body.setAngularVelocity(cr, 0);
+    }, 3000);
+
     return () => {
       cancelAnimationFrame(raf);
+      clearInterval(recalibrate);
       Composite.clear(engine.world, false);
       Engine.clear(engine);
     };
