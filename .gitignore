@@ -24,3 +24,11 @@ dist-ssr
 *.sw?
 
 .env
+
+# Tool/config directories
+.claude/worktrees/
+.playwright-mcp/
+.wrangler/
+
+# Screenshots
+*.png
