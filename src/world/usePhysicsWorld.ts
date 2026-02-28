@@ -5,8 +5,8 @@ import type { PhysicsBodySnapshot, CreaturePosition, PhysicsCommand } from './ty
 const { Engine, Bodies, Body, Composite } = Matter;
 
 export const CANVAS = { width: 840, height: 640 };
-export const PLANET_R = 620;
-export const PLANET_CENTER = { x: 420, y: 920 };
+export const PLANET_R = 1200;
+export const PLANET_CENTER = { x: 420, y: 1500 };
 const CREATURE_R = 42;
 const MAX_CREATURE_SPEED = 5; // px per physics step — keeps creature visible
 
