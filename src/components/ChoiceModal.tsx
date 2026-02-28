@@ -1,26 +1,34 @@
-import type { Environment } from '../types';
+import type { Environment, PlayerAxisLevel } from '../types';
 
 interface ChoiceModalProps {
   environment: Environment;
-  interventionUsed?: boolean;
-  onObserve: () => void;
-  onIntervene?: (variable: string) => void;
+  onProceed: () => void;
 }
 
-export default function ChoiceModal({
-  environment,
-  interventionUsed = false,
-  onObserve,
-  onIntervene,
-}: ChoiceModalProps) {
-  const { eventName, pressure, oxygen, temperature, instabilityIndex, narrative, threatDetail } =
-    environment;
+const axisConfig = {
+  energy: { icon: '\u26A1', label: '에너지' },
+  physical: { icon: '\uD83D\uDC80', label: '물리' },
+  purity: { icon: '\uD83E\uDEE7', label: '순도' },
+} as const;
 
-  const paramColor = (val: string) =>
-    val === 'low' ? 'modal__param-value--low' : val === 'high' ? 'modal__param-value--high' : 'modal__param-value--normal';
+function axisColor(level: PlayerAxisLevel): string {
+  switch (level) {
+    case 'LOW': return 'modal__param-value--low';
+    case 'NORMAL': return 'modal__param-value--normal';
+    case 'HIGH': return 'modal__param-value--high';
+    case 'CRITICAL': return 'modal__param-value--critical';
+  }
+}
 
-  const paramLabel = (val: string) =>
-    val === 'low' ? 'LOW' : val === 'high' ? 'HIGH' : 'N';
+export default function ChoiceModal({ environment, onProceed }: ChoiceModalProps) {
+  const {
+    eventName,
+    instabilityIndex,
+    narrative,
+    playerAxes,
+    sensory,
+    threatDetail,
+  } = environment;
 
   return (
     <div className="modal-overlay">
@@ -31,51 +39,43 @@ export default function ChoiceModal({
         <p className="modal__narrative">{narrative}</p>
 
         <div className="modal__params">
-          <div className="modal__param">
-            <span className="modal__param-label">기압</span>
-            <span className={`modal__param-value ${paramColor(pressure)}`}>
-              {paramLabel(pressure)}
-            </span>
+          {(Object.keys(axisConfig) as Array<keyof typeof axisConfig>).map((axis) => (
+            <div className="modal__param" key={axis}>
+              <span className="modal__param-label">
+                {axisConfig[axis].icon} {axisConfig[axis].label}
+              </span>
+              <span className={`modal__param-value ${axisColor(playerAxes[axis])}`}>
+                {playerAxes[axis]}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <div className="modal__sensory">
+          <div className="modal__sensory-item">
+            <span className="modal__sensory-icon">{'\uD83D\uDC41'}</span>
+            <span>{sensory.visual}</span>
           </div>
-          <div className="modal__param">
-            <span className="modal__param-label">산소</span>
-            <span className={`modal__param-value ${paramColor(oxygen)}`}>
-              {paramLabel(oxygen)}
-            </span>
+          <div className="modal__sensory-item">
+            <span className="modal__sensory-icon">{'\uD83D\uDC42'}</span>
+            <span>{sensory.auditory}</span>
           </div>
-          <div className="modal__param">
-            <span className="modal__param-label">온도</span>
-            <span className={`modal__param-value ${paramColor(temperature)}`}>
-              {paramLabel(temperature)}
-            </span>
+          <div className="modal__sensory-item">
+            <span className="modal__sensory-icon">{'\u270B'}</span>
+            <span>{sensory.tactile}</span>
           </div>
         </div>
 
         <div className="modal__threat">
-          <span>&#9888;</span>
+          <span>{'\u26A0'}</span>
           <span>{threatDetail}</span>
         </div>
 
         <div className="modal__divider" />
 
-        <button className="modal__observe-btn" onClick={onObserve}>
-          &#128065; 관찰한다
+        <button className="modal__observe-btn" onClick={onProceed}>
+          {'\uD83D\uDC41'} 진화를 지켜본다
         </button>
-
-        <div className={`modal__intervene ${interventionUsed ? 'modal__intervene--disabled' : ''}`}>
-          <div className="modal__intervene-label">&#9889; 개입한다 (1회 제한)</div>
-          <div className="modal__intervene-buttons">
-            <button className="modal__var-btn" onClick={() => onIntervene?.('pressure')}>
-              &#11015;&#65039; 기압
-            </button>
-            <button className="modal__var-btn" onClick={() => onIntervene?.('oxygen')}>
-              &#129707; 산소
-            </button>
-            <button className="modal__var-btn" onClick={() => onIntervene?.('temperature')}>
-              &#127777;&#65039; 온도
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );

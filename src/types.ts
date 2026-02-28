@@ -11,19 +11,67 @@ export interface Creature {
   description: string;
   traits: string[];
   vulnerabilities: string[];
+  energyStrategy?: string;
   stats: Stats;
   imageUrl: string | null;
   birthWords: string;
+  generation?: number;
+}
+
+// 8-axis environment variable levels
+export type TemperatureLevel = 'extreme_low' | 'low' | 'normal' | 'high' | 'extreme_high';
+export type PressureLevel = 'near_zero' | 'low' | 'normal' | 'high' | 'crushing';
+export type AtmosphereLevel = 'toxic' | 'reducing' | 'thin' | 'normal' | 'dense_inert';
+export type RadiationLevel = 'none' | 'low' | 'normal' | 'high' | 'lethal';
+export type GravityLevel = 'micro' | 'low' | 'normal' | 'high' | 'extreme';
+export type SolventLevel = 'desiccated' | 'scarce' | 'normal' | 'saturated' | 'submerged';
+export type LuminosityLevel = 'pitch_dark' | 'dim' | 'normal' | 'bright' | 'scorching';
+export type TectonicsLevel = 'dead' | 'stable' | 'active' | 'volatile' | 'cataclysmic';
+
+export type PlayerAxisLevel = 'LOW' | 'NORMAL' | 'HIGH' | 'CRITICAL';
+
+export interface EnvVariables {
+  temperature: TemperatureLevel;
+  pressure: PressureLevel;
+  atmosphere: AtmosphereLevel;
+  radiation: RadiationLevel;
+  gravity: GravityLevel;
+  solvent: SolventLevel;
+  luminosity: LuminosityLevel;
+  tectonics: TectonicsLevel;
+}
+
+export interface PlayerAxes {
+  energy: PlayerAxisLevel;
+  physical: PlayerAxisLevel;
+  purity: PlayerAxisLevel;
+}
+
+export interface Sensory {
+  visual: string;
+  auditory: string;
+  tactile: string;
+}
+
+export interface VisualTone {
+  primaryColor: string;
+  mood: string;
+  keyVisual: string;
 }
 
 export interface Environment {
   eventName: string;
-  pressure: string;
-  oxygen: string;
-  temperature: string;
+  cascadingCause: string;
+  envVariables: EnvVariables;
+  envTags: string[];
+  threatCategory: string;
   instabilityIndex: number;
   narrative: string;
+  sensory: Sensory;
   threatDetail: string;
+  hiddenOpportunity: string;
+  visualTone: VisualTone;
+  playerAxes: PlayerAxes;
 }
 
 export interface EvolutionResult {

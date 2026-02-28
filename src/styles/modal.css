@@ -85,7 +85,32 @@
 
 .modal__param-value--low { color: var(--accent-blue); }
 .modal__param-value--normal { color: var(--text-secondary); }
-.modal__param-value--high { color: var(--accent-red); }
+.modal__param-value--high { color: var(--accent-amber); }
+.modal__param-value--critical { color: var(--accent-red); font-weight: 700; }
+
+/* Sensory Section */
+.modal__sensory {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-lg);
+  padding: var(--space-md);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+}
+
+.modal__sensory-item {
+  display: flex;
+  gap: var(--space-sm);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.modal__sensory-icon {
+  flex-shrink: 0;
+  width: 1.2em;
+}
 
 .modal__threat {
   display: flex;
@@ -106,7 +131,7 @@
   margin-bottom: var(--space-xl);
 }
 
-/* Observe Button */
+/* Proceed Button */
 .modal__observe-btn {
   width: 100%;
   padding: var(--space-md);
@@ -118,60 +143,10 @@
   font-weight: 600;
   cursor: pointer;
   transition: all var(--transition-fast);
-  margin-bottom: var(--space-lg);
   font-family: var(--font-sans);
 }
 
 .modal__observe-btn:hover {
   background: rgba(74, 222, 128, 0.08);
   box-shadow: 0 0 12px rgba(74, 222, 128, 0.1);
-}
-
-/* Intervene Section */
-.modal__intervene {
-  padding: var(--space-md);
-  border: 1px solid rgba(248, 113, 113, 0.2);
-  border-radius: var(--radius-md);
-  background: rgba(248, 113, 113, 0.04);
-}
-
-.modal__intervene-label {
-  font-size: var(--text-sm);
-  color: var(--accent-red);
-  font-weight: 600;
-  margin-bottom: var(--space-md);
-}
-
-.modal__intervene-buttons {
-  display: flex;
-  gap: var(--space-sm);
-}
-
-.modal__var-btn {
-  flex: 1;
-  padding: var(--space-sm) var(--space-md);
-  background: var(--bg-secondary);
-  border: 1px solid rgba(248, 113, 113, 0.2);
-  border-radius: var(--radius-sm);
-  color: var(--text-primary);
-  font-size: var(--text-sm);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  font-family: var(--font-sans);
-}
-
-.modal__var-btn:hover {
-  background: rgba(248, 113, 113, 0.1);
-  border-color: var(--accent-red);
-}
-
-/* Disabled state (already used) */
-.modal__intervene--disabled {
-  opacity: 0.4;
-  pointer-events: none;
-}
-
-.modal__intervene--disabled .modal__intervene-label::after {
-  content: ' (사용됨)';
-  font-weight: 400;
 }
