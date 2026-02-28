@@ -26,9 +26,29 @@ import {
   parseSynthesisResponse,
 } from './schemas';
 import type { SynthesisResult } from '../game/types';
+import {
+  MOCK_CREATURE,
+  MOCK_ENVIRONMENT,
+  MOCK_EVOLUTION,
+  MOCK_TRIAL_SURVIVE,
+  MOCK_SYNTHESIS,
+} from './mockData';
+
+const DEBUG_MOCK = new URLSearchParams(window.location.search).get('debug') === 'skip';
+const MOCK_DELAY = 300; // ms — just enough to see loading states
+
+function mockDelay(): Promise<void> {
+  return new Promise((r) => setTimeout(r, MOCK_DELAY));
+}
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY as string;
-const ai = new GoogleGenAI({ apiKey: API_KEY });
+
+// Lazy-init so debug mode doesn't crash when API key is missing
+let _ai: GoogleGenAI | null = null;
+function getAI(): GoogleGenAI {
+  if (!_ai) _ai = new GoogleGenAI({ apiKey: API_KEY });
+  return _ai;
+}
 
 const BASE_CONFIG = {
   temperature: 0.9,
@@ -39,10 +59,16 @@ const BASE_CONFIG = {
 };
 
 export async function generateCreature(keyword1: string, keyword2: string): Promise<Creature | null> {
+  if (DEBUG_MOCK) {
+    await mockDelay();
+    console.log('[Mock] generateCreature', keyword1, keyword2);
+    return { ...MOCK_CREATURE, birthWords: `${keyword1} × ${keyword2}` };
+  }
+
   const userPrompt = buildCreatureUserPrompt(keyword1, keyword2);
 
   return callWithRetry(async () => {
-    const response = await ai.models.generateContent({
+    const response = await getAI().models.generateContent({
       model: 'gemini-2.5-flash',
       contents: userPrompt,
       config: {
@@ -63,10 +89,16 @@ export async function generateEnvironment(
   chaosLevel: number,
   prevEnv?: Environment,
 ): Promise<Environment | null> {
+  if (DEBUG_MOCK) {
+    await mockDelay();
+    console.log('[Mock] generateEnvironment', creature.name);
+    return { ...MOCK_ENVIRONMENT };
+  }
+
   const userPrompt = buildEnvironmentUserPrompt(creature, chaosLevel, prevEnv);
 
   return callWithRetry(async () => {
-    const response = await ai.models.generateContent({
+    const response = await getAI().models.generateContent({
       model: 'gemini-2.5-flash',
       contents: userPrompt,
       config: {
@@ -86,10 +118,16 @@ export async function generateEvolution(
   creature: Creature,
   environment: Environment,
 ): Promise<EvolutionResult | null> {
+  if (DEBUG_MOCK) {
+    await mockDelay();
+    console.log('[Mock] generateEvolution', creature.name);
+    return { ...MOCK_EVOLUTION };
+  }
+
   const userPrompt = buildEvolutionUserPrompt(creature, environment);
 
   return callWithRetry(async () => {
-    const response = await ai.models.generateContent({
+    const response = await getAI().models.generateContent({
       model: 'gemini-2.5-flash',
       contents: userPrompt,
       config: {
@@ -110,10 +148,16 @@ export async function generateTrial(
   environment: Environment,
   chaosLevel: number,
 ): Promise<TrialResult | null> {
+  if (DEBUG_MOCK) {
+    await mockDelay();
+    console.log('[Mock] generateTrial', creature.name);
+    return { ...MOCK_TRIAL_SURVIVE };
+  }
+
   const userPrompt = buildTrialUserPrompt(creature, environment, chaosLevel);
 
   return callWithRetry(async () => {
-    const response = await ai.models.generateContent({
+    const response = await getAI().models.generateContent({
       model: 'gemini-2.5-flash',
       contents: userPrompt,
       config: {
@@ -134,10 +178,16 @@ export async function generateSynthesis(
   trialResult: TrialResult,
   newKeyword: string,
 ): Promise<SynthesisResult | null> {
+  if (DEBUG_MOCK) {
+    await mockDelay();
+    console.log('[Mock] generateSynthesis', creature.name, newKeyword);
+    return { ...MOCK_SYNTHESIS };
+  }
+
   const userPrompt = buildSynthesisUserPrompt(creature, trialResult, newKeyword);
 
   return callWithRetry(async () => {
-    const response = await ai.models.generateContent({
+    const response = await getAI().models.generateContent({
       model: 'gemini-2.5-flash',
       contents: userPrompt,
       config: {
